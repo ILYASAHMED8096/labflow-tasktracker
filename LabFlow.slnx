@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="../LabFlow.Data/LabFlow.Data.csproj" />
+  <Project Path="LabFlow.csproj" />
+</Solution>
