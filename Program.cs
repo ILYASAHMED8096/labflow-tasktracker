@@ -10,19 +10,21 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// DbContext
+// Database (SQLite)
 builder.Services.AddDbContext<LabFlowDbContext>(options =>
 {
     var cs = builder.Configuration.GetConnectionString("DefaultConnection");
     options.UseSqlite(cs);
 });
 
-// CORS
+// CORS (for frontend later)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin();
+        policy.AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowAnyOrigin();
     });
 });
 
@@ -30,23 +32,22 @@ var app = builder.Build();
 
 app.UseCors("AllowFrontend");
 
-// Swagger
+// Swagger UI
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// Optional: redirect root to swagger so you don’t see 404
+// Redirect root ? swagger
 app.MapGet("/", () => Results.Redirect("/swagger"));
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
 
 app.MapControllers();
 
-// Ensure DB created
+// Ensure DB exists
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<LabFlowDbContext>();
