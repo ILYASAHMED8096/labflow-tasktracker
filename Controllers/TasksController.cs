@@ -48,7 +48,10 @@ public class TasksController : ControllerBase
      [FromQuery] string? sortBy = "createdAt",
      [FromQuery] string? sortDir = "desc",
      [FromQuery] int page = 1,
-     [FromQuery] int pageSize = 20)
+     [FromQuery] int pageSize = 20,
+     [FromQuery] DateTime? dueFrom = null,
+     [FromQuery] DateTime? dueTo = null,
+     [FromQuery] bool? overdue = null)
     {
         page = page < 1 ? 1 : page;
         pageSize = pageSize is < 1 or > 100 ? 20 : pageSize;
@@ -72,6 +75,25 @@ public class TasksController : ControllerBase
             query = query.Where(t =>
                 t.Title.Contains(term) ||
                 (t.Description != null && t.Description.Contains(term)));
+        }
+        // Due date filters
+        if (dueFrom.HasValue)
+        {
+            query = query.Where(t => t.DueDate.HasValue && t.DueDate.Value.Date >= dueFrom.Value.Date);
+        }
+
+        if (dueTo.HasValue)
+        {
+            query = query.Where(t => t.DueDate.HasValue && t.DueDate.Value.Date <= dueTo.Value.Date);
+        }
+
+        if (overdue.HasValue && overdue.Value)
+        {
+            var today = DateTime.UtcNow.Date;
+            query = query.Where(t =>
+                t.DueDate.HasValue &&
+                t.DueDate.Value.Date < today &&
+                t.Status != "Done");
         }
 
         // Sorting
