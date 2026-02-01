@@ -1,103 +1,121 @@
-# LabFlow – Task Management REST API
+# LabFlow TaskTracker
 
-LabFlow is a backend-focused task management system built using **ASP.NET Core Web API** and **Entity Framework Core**.  
-The project demonstrates clean architecture, RESTful API design, and database-backed CRUD operations.
+LabFlow TaskTracker is a clean, enterprise-style **ASP.NET Core Web API** application designed to manage tasks with priority, status, and due dates.  
+The project demonstrates **backend architecture, RESTful API design, validation, and database integration** using modern .NET practices.
 
-This project is designed as a portfolio-ready backend application, simulating internal tools used in enterprise or lab environments.
+This project is intended as a **portfolio-grade backend system**, showcasing production-ready coding patterns.
 
 ---
 
 ## 🚀 Features
 
-- RESTful API using ASP.NET Core
-- CRUD operations for task management
-- Entity Framework Core with SQLite
-- Input validation and normalization
-- Swagger (OpenAPI) documentation
-- Clean separation of concerns
-- CORS enabled for frontend integration
-- Git-based workflow with feature branches
+- CRUD operations for tasks
+- Task validation (title, priority, status)
+- Priority & status normalization
+- SQLite database using Entity Framework Core
+- Swagger UI for API testing
+- Clean separation of concerns (API + Data layer)
 
 ---
 
 ## 🧱 Tech Stack
 
-- **Backend:** ASP.NET Core Web API (.NET 8 / .NET 10 compatible)
+- **Backend:** ASP.NET Core Web API (.NET 8)
 - **ORM:** Entity Framework Core
 - **Database:** SQLite
-- **API Docs:** Swagger / OpenAPI
-- **Version Control:** Git & GitHub
+- **API Documentation:** Swagger (OpenAPI)
+- **Source Control:** Git & GitHub
 - **IDE:** Visual Studio 2026
 
 ---
 
-## 📂 Project Structure
+## 🏗️ Architecture Overview
 
-LabFlow/
+LabFlow
 │
-├── Controllers/ # API Controllers
+├── Controllers
 │ └── TasksController.cs
 │
-├── LabFlow.Data/ # Data access layer
-│ ├── Data/
+├── LabFlow.Data
+│ ├── Data
 │ │ └── LabFlowDbContext.cs
-│ └── Entities/
+│ └── Entities
 │ └── TaskItem.cs
 │
-├── Program.cs # Application bootstrap
-├── appsettings.json # Configuration
-├── LabFlow.http # HTTP test file
+├── Program.cs
+├── appsettings.json
 └── README.md
 
 
+- **Controllers** handle HTTP requests and validation
+- **Data project** contains EF Core DbContext and entities
+- **Database** is created automatically at runtime
 
 ---
 
-## 🔌 API Endpoints
+## 📌 API Endpoints
 
-| Method | Endpoint              | Description              |
-|------|----------------------|--------------------------|
-| GET  | /api/tasks            | Get all tasks            |
-| GET  | /api/tasks/{id}       | Get task by ID           |
-| POST | /api/tasks            | Create new task          |
-| PUT  | /api/tasks/{id}       | Update existing task     |
-| DELETE | /api/tasks/{id}     | Delete task              |
+| Method | Endpoint | Description |
+|------|---------|------------|
+| GET | `/api/tasks` | Get all tasks |
+| GET | `/api/tasks/{id}` | Get task by ID |
+| POST | `/api/tasks` | Create a new task |
+| PUT | `/api/tasks/{id}` | Update a task |
+| DELETE | `/api/tasks/{id}` | Delete a task |
 
 ---
 
-## 🧪 Running the Project
+## ▶️ How to Run Locally
 
+### Prerequisites
+- Visual Studio 2026
+- .NET 8 SDK
+
+### Steps
 1. Clone the repository
 2. Open `LabFlow.sln` in Visual Studio
-3. Run the project using **IIS Express**
-4. Open Swagger UI:
+3. Select **IIS Express**
+4. Press **F5**
+5. Swagger opens automatically at: https://localhost:<port>/swagger
 
 
-
-The database is created automatically on first run.
-
----
-
-## ✅ Validation Rules
-
-- Title is required (max 200 characters)
-- Priority: Low | Medium | High
-- Status: Todo | InProgress | Done
+The SQLite database is created automatically on first run.
 
 ---
 
-## 📌 Future Enhancements
+## 🧠 Design Decisions
 
-- Authentication & Authorization (JWT)
-- Frontend UI (React / Angular)
-- Role-based access
+- SQLite is used for simplicity and portability
+- Database files are excluded via `.gitignore`
+- Validation logic is centralized in the controller
+- Clean DTO usage for update operations
+- RESTful naming conventions followed
+
+---
+
+## 📚 What I Learned
+
+- Designing REST APIs using ASP.NET Core
+- Implementing EF Core with SQLite
+- Validation and normalization of user input
+- Structuring projects for maintainability
+- Using GitHub pull requests and branching workflow
+
+---
+
+## 🔮 Future Enhancements
+
+- Frontend UI (React or Blazor)
+- Authentication & authorization
 - Pagination & filtering
-- Deployment to Azure
+- SQL Server support
+- Unit testing
 
 ---
 
 ## 👤 Author
 
 **Mohammed Ilyas Ahmed**  
-MS in Artificial Intelligence – University of North Texas  
-Software Engineer | Backend & AI-focused Development
+MS in Artificial Intelligence  
+University of North Texas  
+
