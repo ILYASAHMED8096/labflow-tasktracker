@@ -1,5 +1,6 @@
 ﻿using LabFlow.Data.Data;
 using LabFlow.Data.Entities;
+using LabFlow.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -40,14 +41,68 @@ public class TasksController : ControllerBase
     );
 
     [HttpGet]
-    public async Task<ActionResult<List<TaskItem>>> GetAll()
+    public async Task<ActionResult<PagedResult<TaskItem>>> GetAll(
+     [FromQuery] string? status,
+     [FromQuery] string? priority,
+     [FromQuery] string? q,
+     [FromQuery] string? sortBy = "createdAt",
+     [FromQuery] string? sortDir = "desc",
+     [FromQuery] int page = 1,
+     [FromQuery] int pageSize = 20)
     {
-        var tasks = await _db.Tasks
-            .OrderByDescending(t => t.CreatedAtUtc)
+        page = page < 1 ? 1 : page;
+        pageSize = pageSize is < 1 or > 100 ? 20 : pageSize;
+
+        IQueryable<TaskItem> query = _db.Tasks;
+
+        // Filtering
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            query = query.Where(t => t.Status == NormalizeStatus(status));
+        }
+
+        if (!string.IsNullOrWhiteSpace(priority))
+        {
+            query = query.Where(t => t.Priority == NormalizePriority(priority));
+        }
+
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            var term = q.Trim();
+            query = query.Where(t =>
+                t.Title.Contains(term) ||
+                (t.Description != null && t.Description.Contains(term)));
+        }
+
+        // Sorting
+        bool asc = (sortDir ?? "desc").ToLower() == "asc";
+
+        query = (sortBy ?? "createdAt").ToLower() switch
+        {
+            "duedate" => asc ? query.OrderBy(t => t.DueDate) : query.OrderByDescending(t => t.DueDate),
+            "priority" => asc ? query.OrderBy(t => t.Priority) : query.OrderByDescending(t => t.Priority),
+            "status" => asc ? query.OrderBy(t => t.Status) : query.OrderByDescending(t => t.Status),
+            _ => asc ? query.OrderBy(t => t.CreatedAtUtc) : query.OrderByDescending(t => t.CreatedAtUtc)
+        };
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
-        return Ok(tasks);
+        var result = new PagedResult<TaskItem>
+        {
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            Items = items
+        };
+
+        return Ok(result);
     }
+
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<TaskItem>> GetById(int id)
