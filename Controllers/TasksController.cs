@@ -40,14 +40,65 @@ public class TasksController : ControllerBase
     );
 
     [HttpGet]
-    public async Task<ActionResult<List<TaskItem>>> GetAll()
+    public async Task<ActionResult<List<TaskItem>>> GetAll(
+    [FromQuery] string? status,
+    [FromQuery] string? priority,
+    [FromQuery] string? q,
+    [FromQuery] string? sortBy = "createdAt",
+    [FromQuery] string? sortDir = "desc")
     {
-        var tasks = await _db.Tasks
-            .OrderByDescending(t => t.CreatedAtUtc)
-            .ToListAsync();
+        IQueryable<TaskItem> query = _db.Tasks;
 
+        // Filters
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            var normalizedStatus = NormalizeStatus(status);
+            query = query.Where(t => t.Status == normalizedStatus);
+        }
+
+        if (!string.IsNullOrWhiteSpace(priority))
+        {
+            var normalizedPriority = NormalizePriority(priority);
+            query = query.Where(t => t.Priority == normalizedPriority);
+        }
+
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            var term = q.Trim();
+            query = query.Where(t =>
+                t.Title.Contains(term) ||
+                (t.Description != null && t.Description.Contains(term)));
+        }
+
+        // Sorting
+        var dir = (sortDir ?? "desc").Trim().ToLowerInvariant();
+        var by = (sortBy ?? "createdAt").Trim().ToLowerInvariant();
+
+        bool asc = dir == "asc";
+
+        query = by switch
+        {
+            "duedate" => asc
+                ? query.OrderBy(t => t.DueDate)
+                : query.OrderByDescending(t => t.DueDate),
+
+            "priority" => asc
+                ? query.OrderBy(t => t.Priority)
+                : query.OrderByDescending(t => t.Priority),
+
+            "status" => asc
+                ? query.OrderBy(t => t.Status)
+                : query.OrderByDescending(t => t.Status),
+
+            _ => asc
+                ? query.OrderBy(t => t.CreatedAtUtc)
+                : query.OrderByDescending(t => t.CreatedAtUtc),
+        };
+
+        var tasks = await query.ToListAsync();
         return Ok(tasks);
     }
+
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<TaskItem>> GetById(int id)
