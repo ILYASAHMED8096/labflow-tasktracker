@@ -1,5 +1,6 @@
 ﻿using LabFlow.Data.Data;
 using LabFlow.Data.Entities;
+using LabFlow.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -40,26 +41,29 @@ public class TasksController : ControllerBase
     );
 
     [HttpGet]
-    public async Task<ActionResult<List<TaskItem>>> GetAll(
-    [FromQuery] string? status,
-    [FromQuery] string? priority,
-    [FromQuery] string? q,
-    [FromQuery] string? sortBy = "createdAt",
-    [FromQuery] string? sortDir = "desc")
+    public async Task<ActionResult<PagedResult<TaskItem>>> GetAll(
+     [FromQuery] string? status,
+     [FromQuery] string? priority,
+     [FromQuery] string? q,
+     [FromQuery] string? sortBy = "createdAt",
+     [FromQuery] string? sortDir = "desc",
+     [FromQuery] int page = 1,
+     [FromQuery] int pageSize = 20)
     {
+        page = page < 1 ? 1 : page;
+        pageSize = pageSize is < 1 or > 100 ? 20 : pageSize;
+
         IQueryable<TaskItem> query = _db.Tasks;
 
-        // Filters
+        // Filtering
         if (!string.IsNullOrWhiteSpace(status))
         {
-            var normalizedStatus = NormalizeStatus(status);
-            query = query.Where(t => t.Status == normalizedStatus);
+            query = query.Where(t => t.Status == NormalizeStatus(status));
         }
 
         if (!string.IsNullOrWhiteSpace(priority))
         {
-            var normalizedPriority = NormalizePriority(priority);
-            query = query.Where(t => t.Priority == normalizedPriority);
+            query = query.Where(t => t.Priority == NormalizePriority(priority));
         }
 
         if (!string.IsNullOrWhiteSpace(q))
@@ -71,32 +75,32 @@ public class TasksController : ControllerBase
         }
 
         // Sorting
-        var dir = (sortDir ?? "desc").Trim().ToLowerInvariant();
-        var by = (sortBy ?? "createdAt").Trim().ToLowerInvariant();
+        bool asc = (sortDir ?? "desc").ToLower() == "asc";
 
-        bool asc = dir == "asc";
-
-        query = by switch
+        query = (sortBy ?? "createdAt").ToLower() switch
         {
-            "duedate" => asc
-                ? query.OrderBy(t => t.DueDate)
-                : query.OrderByDescending(t => t.DueDate),
-
-            "priority" => asc
-                ? query.OrderBy(t => t.Priority)
-                : query.OrderByDescending(t => t.Priority),
-
-            "status" => asc
-                ? query.OrderBy(t => t.Status)
-                : query.OrderByDescending(t => t.Status),
-
-            _ => asc
-                ? query.OrderBy(t => t.CreatedAtUtc)
-                : query.OrderByDescending(t => t.CreatedAtUtc),
+            "duedate" => asc ? query.OrderBy(t => t.DueDate) : query.OrderByDescending(t => t.DueDate),
+            "priority" => asc ? query.OrderBy(t => t.Priority) : query.OrderByDescending(t => t.Priority),
+            "status" => asc ? query.OrderBy(t => t.Status) : query.OrderByDescending(t => t.Status),
+            _ => asc ? query.OrderBy(t => t.CreatedAtUtc) : query.OrderByDescending(t => t.CreatedAtUtc)
         };
 
-        var tasks = await query.ToListAsync();
-        return Ok(tasks);
+        var totalCount = await query.CountAsync();
+
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var result = new PagedResult<TaskItem>
+        {
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            Items = items
+        };
+
+        return Ok(result);
     }
 
 
