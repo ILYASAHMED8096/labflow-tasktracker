@@ -23,42 +23,42 @@ public class TasksController : ControllerBase
         _db = db;
     }
 
-    // DTOs
-    public record TaskCreateDto(
-        string Title,
-        string? Description,
-        string Priority,
-        string Status,
-        DateTime? DueDate
-    );
+    // ---------------- DTO Mapper ----------------
 
-    public record TaskUpdateDto(
-        string Title,
-        string? Description,
-        string Priority,
-        string Status,
-        DateTime? DueDate
-    );
+    private static TaskResponseDto ToDto(TaskItem t) =>
+        new(
+            t.Id,
+            t.Title,
+            t.Description,
+            t.Priority,
+            t.Status,
+            t.DueDate,
+            t.CreatedAtUtc,
+            t.UpdatedAtUtc
+        );
+
+    // ---------------- GET: /api/tasks ----------------
 
     [HttpGet]
-    public async Task<ActionResult<PagedResult<TaskItem>>> GetAll(
-     [FromQuery] string? status,
-     [FromQuery] string? priority,
-     [FromQuery] string? q,
-     [FromQuery] string? sortBy = "createdAt",
-     [FromQuery] string? sortDir = "desc",
-     [FromQuery] int page = 1,
-     [FromQuery] int pageSize = 20,
-     [FromQuery] DateTime? dueFrom = null,
-     [FromQuery] DateTime? dueTo = null,
-     [FromQuery] bool? overdue = null)
+    public async Task<ActionResult<PagedResult<TaskResponseDto>>> GetAll(
+        [FromQuery] string? status,
+        [FromQuery] string? priority,
+        [FromQuery] string? q,
+        [FromQuery] string? sortBy = "createdAt",
+        [FromQuery] string? sortDir = "desc",
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] DateTime? dueFrom = null,
+        [FromQuery] DateTime? dueTo = null,
+        [FromQuery] bool? overdue = null)
     {
         page = page < 1 ? 1 : page;
         pageSize = pageSize is < 1 or > 100 ? 20 : pageSize;
 
         IQueryable<TaskItem> query = _db.Tasks;
-        query = query.Where(t => !t.IsDeleted);
 
+        // Hide deleted tasks
+        query = query.Where(t => !t.IsDeleted);
 
         // Filtering
         if (!string.IsNullOrWhiteSpace(status))
@@ -78,6 +78,7 @@ public class TasksController : ControllerBase
                 t.Title.Contains(term) ||
                 (t.Description != null && t.Description.Contains(term)));
         }
+
         // Due date filters
         if (dueFrom.HasValue)
         {
@@ -116,29 +117,32 @@ public class TasksController : ControllerBase
             .Take(pageSize)
             .ToListAsync();
 
-        var result = new PagedResult<TaskItem>
+        var result = new PagedResult<TaskResponseDto>
         {
             Page = page,
             PageSize = pageSize,
             TotalCount = totalCount,
-            Items = items
+            Items = items.Select(ToDto).ToList()
         };
 
         return Ok(result);
     }
 
+    // ---------------- GET: /api/tasks/{id} ----------------
 
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<TaskItem>> GetById(int id)
+    public async Task<ActionResult<TaskResponseDto>> GetById(int id)
     {
         var task = await _db.Tasks.FindAsync(id);
         if (task is null || task.IsDeleted) return NotFound();
-        return Ok(task);
 
+        return Ok(ToDto(task));
     }
 
+    // ---------------- POST: /api/tasks ----------------
+
     [HttpPost]
-    public async Task<ActionResult<TaskItem>> Create(TaskCreateDto dto)
+    public async Task<ActionResult<TaskResponseDto>> Create(TaskCreateDto dto)
     {
         var error = Validate(dto.Title, dto.Priority, dto.Status);
         if (error != null) return error;
@@ -156,17 +160,19 @@ public class TasksController : ControllerBase
         _db.Tasks.Add(task);
         await _db.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetById), new { id = task.Id }, task);
+        return CreatedAtAction(nameof(GetById), new { id = task.Id }, ToDto(task));
     }
 
+    // ---------------- PUT: /api/tasks/{id} ----------------
+
     [HttpPut("{id:int}")]
-    public async Task<ActionResult<TaskItem>> Update(int id, TaskUpdateDto dto)
+    public async Task<ActionResult<TaskResponseDto>> Update(int id, TaskUpdateDto dto)
     {
         var error = Validate(dto.Title, dto.Priority, dto.Status);
         if (error != null) return error;
 
         var task = await _db.Tasks.FindAsync(id);
-        if (task == null) return NotFound();
+        if (task is null || task.IsDeleted) return NotFound();
 
         task.Title = dto.Title.Trim();
         task.Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim();
@@ -175,10 +181,12 @@ public class TasksController : ControllerBase
         task.DueDate = dto.DueDate;
         task.UpdatedAtUtc = DateTime.UtcNow;
 
-
         await _db.SaveChangesAsync();
-        return Ok(task);
+        return Ok(ToDto(task));
     }
+
+    // ---------------- DELETE: /api/tasks/{id} (Soft Delete) ----------------
+
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {
@@ -192,8 +200,10 @@ public class TasksController : ControllerBase
         return NoContent();
     }
 
+    // ---------------- POST: /api/tasks/{id}/restore ----------------
+
     [HttpPost("{id:int}/restore")]
-    public async Task<IActionResult> Restore(int id)
+    public async Task<ActionResult<TaskResponseDto>> Restore(int id)
     {
         var task = await _db.Tasks.FindAsync(id);
         if (task is null) return NotFound();
@@ -202,11 +212,10 @@ public class TasksController : ControllerBase
         task.UpdatedAtUtc = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
-        return Ok(task);
+        return Ok(ToDto(task));
     }
 
-
-    // -------- Validation helpers --------
+    // ---------------- Validation helpers ----------------
 
     private ActionResult? Validate(string title, string priority, string status)
     {
