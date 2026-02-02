@@ -48,12 +48,17 @@ public class TasksController : ControllerBase
      [FromQuery] string? sortBy = "createdAt",
      [FromQuery] string? sortDir = "desc",
      [FromQuery] int page = 1,
-     [FromQuery] int pageSize = 20)
+     [FromQuery] int pageSize = 20,
+     [FromQuery] DateTime? dueFrom = null,
+     [FromQuery] DateTime? dueTo = null,
+     [FromQuery] bool? overdue = null)
     {
         page = page < 1 ? 1 : page;
         pageSize = pageSize is < 1 or > 100 ? 20 : pageSize;
 
         IQueryable<TaskItem> query = _db.Tasks;
+        query = query.Where(t => !t.IsDeleted);
+
 
         // Filtering
         if (!string.IsNullOrWhiteSpace(status))
@@ -72,6 +77,25 @@ public class TasksController : ControllerBase
             query = query.Where(t =>
                 t.Title.Contains(term) ||
                 (t.Description != null && t.Description.Contains(term)));
+        }
+        // Due date filters
+        if (dueFrom.HasValue)
+        {
+            query = query.Where(t => t.DueDate.HasValue && t.DueDate.Value.Date >= dueFrom.Value.Date);
+        }
+
+        if (dueTo.HasValue)
+        {
+            query = query.Where(t => t.DueDate.HasValue && t.DueDate.Value.Date <= dueTo.Value.Date);
+        }
+
+        if (overdue.HasValue && overdue.Value)
+        {
+            var today = DateTime.UtcNow.Date;
+            query = query.Where(t =>
+                t.DueDate.HasValue &&
+                t.DueDate.Value.Date < today &&
+                t.Status != "Done");
         }
 
         // Sorting
@@ -108,7 +132,9 @@ public class TasksController : ControllerBase
     public async Task<ActionResult<TaskItem>> GetById(int id)
     {
         var task = await _db.Tasks.FindAsync(id);
-        return task is null ? NotFound() : Ok(task);
+        if (task is null || task.IsDeleted) return NotFound();
+        return Ok(task);
+
     }
 
     [HttpPost]
@@ -147,21 +173,38 @@ public class TasksController : ControllerBase
         task.Priority = NormalizePriority(dto.Priority);
         task.Status = NormalizeStatus(dto.Status);
         task.DueDate = dto.DueDate;
+        task.UpdatedAtUtc = DateTime.UtcNow;
+
+
+        await _db.SaveChangesAsync();
+        return Ok(task);
+    }
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var task = await _db.Tasks.FindAsync(id);
+        if (task is null || task.IsDeleted) return NotFound();
+
+        task.IsDeleted = true;
+        task.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    [HttpPost("{id:int}/restore")]
+    public async Task<IActionResult> Restore(int id)
+    {
+        var task = await _db.Tasks.FindAsync(id);
+        if (task is null) return NotFound();
+
+        task.IsDeleted = false;
+        task.UpdatedAtUtc = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
         return Ok(task);
     }
 
-    [HttpDelete("{id:int}")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        var task = await _db.Tasks.FindAsync(id);
-        if (task == null) return NotFound();
-
-        _db.Tasks.Remove(task);
-        await _db.SaveChangesAsync();
-        return NoContent();
-    }
 
     // -------- Validation helpers --------
 
