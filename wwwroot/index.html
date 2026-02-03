@@ -28,8 +28,8 @@
                     <option value="Medium">Medium</option>
                     <option value="High">High</option>
                 </select>
-                <button id="btnSearch">Search</button>
-                <button id="btnClear" class="secondary">Clear</button>
+                <button id="btnSearch" type="button">Search</button>
+                <button id="btnClear" type="button" class="secondary">Clear</button>
             </div>
 
             <div class="row">
@@ -60,35 +60,35 @@
                     </select>
                 </label>
 
-                <button id="btnPrev" class="secondary">Prev</button>
+                <button id="btnPrev" type="button" class="secondary">Prev</button>
                 <span id="pageInfo" class="muted">Page 1</span>
-                <button id="btnNext" class="secondary">Next</button>
+                <button id="btnNext" type="button" class="secondary">Next</button>
             </div>
         </section>
 
         <section class="card">
             <div class="row space-between">
                 <h2>Tasks</h2>
-                <button id="btnNew">+ New Task</button>
+                <button id="btnNew" type="button">+ New Task</button>
             </div>
             <div id="error" class="error hidden"></div>
             <div id="list" class="list"></div>
         </section>
 
         <!-- Modal -->
-        <div id="modal" class="modal hidden">
-            <div class="modal-content">
+        <div id="modal" class="modal hidden" aria-hidden="true">
+            <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
                 <div class="row space-between">
                     <h3 id="modalTitle">New Task</h3>
-                    <button type="button" id="btnClose" class="secondary">X</button>
+                    <!-- X close -->
+                    <button id="btnClose" type="button" class="secondary">✕</button>
                 </div>
 
-                <!-- ✅ FORM added for validation + submit -->
+                <!-- ✅ Form wrapper so jQuery validate works -->
                 <form id="taskForm" novalidate>
                     <div class="grid">
                         <label>
                             Title
-                            <!-- ✅ name added for jquery validation -->
                             <input id="title" name="title" />
                         </label>
 
@@ -122,20 +122,65 @@
                     </div>
 
                     <div class="row">
-                        <!-- ✅ Save becomes submit -->
-                        <button type="submit" id="btnSave">Save</button>
-                        <button type="button" id="btnCancel" class="secondary">Cancel</button>
+                        <!-- ✅ Save submits the form -->
+                        <button id="btnSave" type="submit">Save</button>
+                        <button id="btnCancel" type="button" class="secondary">Cancel</button>
                     </div>
                 </form>
             </div>
         </div>
     </main>
 
-    <!-- ✅ jQuery + Validation -->
+    <!-- ✅ jQuery first -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <!-- ✅ jQuery Validate after jQuery -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+
+    <!-- ✅ Your app.js last -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
 
-    <!-- Your app -->
     <script src="app.js"></script>
+
+    <script src="app.js"></script>
+
+    <!-- ✅ Safety: modal closing fallback (even if app.js breaks) -->
+    <script>
+        (function () {
+            const modal = document.getElementById("modal");
+            const closeBtn = document.getElementById("btnClose");
+            const cancelBtn = document.getElementById("btnCancel");
+
+            function closeModal() {
+                modal.classList.add("hidden");
+                modal.setAttribute("aria-hidden", "true");
+            }
+
+            if (closeBtn) closeBtn.addEventListener("click", closeModal);
+            if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
+
+            // click outside closes
+            modal.addEventListener("click", (e) => {
+                if (e.target === modal) closeModal();
+            });
+
+            // ESC closes
+            document.addEventListener("keydown", (e) => {
+                if (e.key === "Escape" && !modal.classList.contains("hidden")) closeModal();
+            });
+        })();
+
+        $("#btnClose").click(function () {
+            
+            $(this).closest(".modal").hide();
+        });
+
+        $("#btnNew").click(function () {
+           
+            $("#modal").css("display", "");
+        });
+    </script>
+    </before>
 </body>
 </html>

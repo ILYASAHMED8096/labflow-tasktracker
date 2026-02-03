@@ -1,9 +1,6 @@
-﻿let page = 1;
-let totalCount = 0;
-let editingId = null;
+﻿
 
 const apiBase = ""; // same host
-
 const el = (id) => document.getElementById(id);
 
 const showError = (msg) => {
@@ -70,7 +67,6 @@ function render(items) {
     }
 
     for (const t of items) {
-        // ✅ Fix: compute isOverdue BEFORE using it
         const isOverdue =
             t.dueDate &&
             new Date(t.dueDate) < new Date() &&
@@ -82,7 +78,6 @@ function render(items) {
         const due = t.dueDate ? new Date(t.dueDate).toLocaleDateString() : "-";
         const updated = t.updatedAtUtc ? new Date(t.updatedAtUtc).toLocaleString() : "-";
 
-        // Optional: show restore only when deleted (if your API returns isDeleted)
         const isDeleted = !!t.isDeleted;
 
         div.innerHTML = `
@@ -133,28 +128,29 @@ function escapeHtml(s) {
 function openModal(title) {
     el("modalTitle").textContent = title;
     el("modal").classList.remove("hidden");
+    el("modal").setAttribute("aria-hidden", "false");
 }
 
 function closeModal() {
-    el("modal").classList.add("hidden");
+    $("#modal").addClass("hidden");
+    $("#modal").attr("aria-hidden", "true");
+
     editingId = null;
 
-    // Clear fields
-    el("title").value = "";
-    el("description").value = "";
-    el("mPriority").value = "Medium";
-    el("mStatus").value = "Todo";
-    el("dueDate").value = "";
+    $("#title").val("");
+    $("#description").val("");
+    $("#mPriority").val("Medium");
+    $("#mStatus").val("Todo");
+    $("#dueDate").val("");
 
-    // Clear validation UI
-    if (window.jQuery) {
-        const $form = $("#taskForm");
-        if ($form.length && $form.data("validator")) {
-            $form.validate().resetForm();
-            $form.find(".input-error").removeClass("input-error");
-        }
+    // Reset validation
+    if ($("#taskForm").data("validator")) {
+        $("#taskForm").validate().resetForm();
+        $(".field-error").remove();
+        $(".input-error").removeClass("input-error");
     }
 }
+
 
 function openNew() {
     editingId = null;
@@ -173,8 +169,8 @@ function openEdit(t) {
 
 async function saveTask() {
     const payload = {
-        title: el("title").value,
-        description: el("description").value,
+        title: el("title").value.trim(),
+        description: el("description").value.trim() || null,
         priority: el("mPriority").value,
         status: el("mStatus").value,
         dueDate: el("dueDate").value ? el("dueDate").value : null
@@ -232,110 +228,82 @@ async function restoreTask(id) {
 }
 
 /* ---------------------------
-   jQuery Validation Setup
+   jQuery Validation + Events
 ---------------------------- */
-function setupValidation() {
-    if (!window.jQuery || !$.fn.validate) return;
+$(document).ready(function () {
 
-    // Optional: style error message
-    $.validator.setDefaults({
-        errorClass: "field-error",
-        validClass: "field-valid",
-        errorPlacement: function (error, element) {
-            // place error below the field
-            error.insertAfter(element);
-        },
-        highlight: function (element) {
-            $(element).addClass("input-error");
-        },
-        unhighlight: function (element) {
-            $(element).removeClass("input-error");
-        }
+    // Search / paging buttons
+    $("#btnSearch").on("click", () => { page = 1; loadTasks(); });
+    $("#btnClear").on("click", () => {
+        $("#q").val("");
+        $("#status").val("");
+        $("#priority").val("");
+        page = 1;
+        loadTasks();
+    });
+    $("#btnPrev").on("click", () => { page = Math.max(1, page - 1); loadTasks(); });
+    $("#btnNext").on("click", () => { page = page + 1; loadTasks(); });
+
+    // Modal open/close
+    $("#btnNew").on("click", openNew);
+    $("#btnClose").on("click", closeModal);
+    $("#btnCancel").on("click", closeModal);
+
+    // Click outside modal closes
+    $("#modal").on("click", function (e) {
+        if (e.target.id === "modal") closeModal();
     });
 
-    // Custom rule: dueDate cannot be in the past (optional)
-    $.validator.addMethod("notPastDate", function (value) {
-        if (!value) return true; // empty allowed
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const d = new Date(value);
-        d.setHours(0, 0, 0, 0);
-        return d >= today;
-    }, "Due date cannot be in the past.");
-
-    $("#taskForm").validate({
-        rules: {
-            title: {
-                required: true,
-                maxlength: 200
-            },
-            priority: {
-                required: true
-            },
-            status: {
-                required: true
-            },
-            dueDate: {
-                notPastDate: true
-            }
-        },
-        messages: {
-            title: {
-                required: "Title is required.",
-                maxlength: "Title must be 200 characters or less."
-            },
-            priority: {
-                required: "Priority is required."
-            },
-            status: {
-                required: "Status is required."
-            }
-        },
-        submitHandler: function () {
-            // ✅ only called if valid
-            saveTask();
-        }
+    // ESC closes
+    $(document).on("keydown", function (e) {
+        if (e.key === "Escape" && !$("#modal").hasClass("hidden")) closeModal();
     });
-}
 
-/* ---------------------------
-   Events
----------------------------- */
-el("btnSearch").addEventListener("click", () => { page = 1; loadTasks(); });
+    // Validation
+    if ($.fn.validate) {
+        $.validator.setDefaults({
+            errorClass: "field-error",
+            highlight: function (element) { $(element).addClass("input-error"); },
+            unhighlight: function (element) { $(element).removeClass("input-error"); }
+        });
 
-el("btnClear").addEventListener("click", () => {
-    el("q").value = "";
-    el("status").value = "";
-    el("priority").value = "";
-    page = 1;
+        $.validator.addMethod("notPastDate", function (value) {
+            if (!value) return true;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const d = new Date(value);
+            d.setHours(0, 0, 0, 0);
+            return d >= today;
+        }, "Due date cannot be in the past.");
+
+        $("#taskForm").validate({
+            rules: {
+                title: { required: true, maxlength: 200 },
+                priority: { required: true },
+                status: { required: true },
+                dueDate: { notPastDate: true }
+            },
+            messages: {
+                title: {
+                    required: "Title is required.",
+                    maxlength: "Title must be 200 characters or less."
+                }
+            },
+            submitHandler: function () {
+                
+              
+                saveTask(); // ✅ Save only if valid
+               
+            }
+        });
+    }
+
+    // Initial load
     loadTasks();
 });
 
-el("btnPrev").addEventListener("click", () => { page = Math.max(1, page - 1); loadTasks(); });
 
-el("btnNext").addEventListener("click", () => { page = page + 1; loadTasks(); });
 
-el("btnNew").addEventListener("click", openNew);
-el("btnClose").addEventListener("click", closeModal);
-el("btnCancel").addEventListener("click", closeModal);
 
-// ✅ IMPORTANT: remove old click handler for btnSave
-// We now submit form (btnSave is type="submit")
-const saveBtn = el("btnSave");
-if (saveBtn) saveBtn.removeEventListener?.("click", saveTask);
 
-// Close modal on ESC
-document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !el("modal").classList.contains("hidden")) {
-        closeModal();
-    }
-});
 
-// Optional: close when clicking outside modal content
-el("modal").addEventListener("click", (e) => {
-    if (e.target === el("modal")) closeModal();
-});
-
-// Initial load
-setupValidation();
-loadTasks();
