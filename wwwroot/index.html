@@ -1,0 +1,141 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LabFlow TaskTracker</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <header class="container">
+        <h1>LabFlow TaskTracker</h1>
+        <p class="muted">Simple UI (HTML/CSS/JS) using your ASP.NET Core API</p>
+    </header>
+
+    <main class="container">
+        <section class="card">
+            <div class="row">
+                <input id="q" placeholder="Search title/description..." />
+                <select id="status">
+                    <option value="">All Status</option>
+                    <option value="Todo">Todo</option>
+                    <option value="InProgress">InProgress</option>
+                    <option value="Done">Done</option>
+                </select>
+                <select id="priority">
+                    <option value="">All Priority</option>
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                </select>
+                <button id="btnSearch">Search</button>
+                <button id="btnClear" class="secondary">Clear</button>
+            </div>
+
+            <div class="row">
+                <label class="inline">
+                    Sort By
+                    <select id="sortBy">
+                        <option value="createdAt">createdAt</option>
+                        <option value="dueDate">dueDate</option>
+                        <option value="priority">priority</option>
+                        <option value="status">status</option>
+                    </select>
+                </label>
+
+                <label class="inline">
+                    Direction
+                    <select id="sortDir">
+                        <option value="desc">desc</option>
+                        <option value="asc">asc</option>
+                    </select>
+                </label>
+
+                <label class="inline">
+                    Page Size
+                    <select id="pageSize">
+                        <option>10</option>
+                        <option selected>20</option>
+                        <option>50</option>
+                    </select>
+                </label>
+
+                <button id="btnPrev" class="secondary">Prev</button>
+                <span id="pageInfo" class="muted">Page 1</span>
+                <button id="btnNext" class="secondary">Next</button>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="row space-between">
+                <h2>Tasks</h2>
+                <button id="btnNew">+ New Task</button>
+            </div>
+            <div id="error" class="error hidden"></div>
+            <div id="list" class="list"></div>
+        </section>
+
+        <!-- Modal -->
+        <div id="modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="row space-between">
+                    <h3 id="modalTitle">New Task</h3>
+                    <button type="button" id="btnClose" class="secondary">X</button>
+                </div>
+
+                <!-- ✅ FORM added for validation + submit -->
+                <form id="taskForm" novalidate>
+                    <div class="grid">
+                        <label>
+                            Title
+                            <!-- ✅ name added for jquery validation -->
+                            <input id="title" name="title" />
+                        </label>
+
+                        <label>
+                            Description
+                            <textarea id="description" name="description" rows="3"></textarea>
+                        </label>
+
+                        <label>
+                            Priority
+                            <select id="mPriority" name="priority">
+                                <option value="Low">Low</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="High">High</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            Status
+                            <select id="mStatus" name="status">
+                                <option value="Todo" selected>Todo</option>
+                                <option value="InProgress">InProgress</option>
+                                <option value="Done">Done</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            Due Date
+                            <input id="dueDate" name="dueDate" type="date" />
+                        </label>
+                    </div>
+
+                    <div class="row">
+                        <!-- ✅ Save becomes submit -->
+                        <button type="submit" id="btnSave">Save</button>
+                        <button type="button" id="btnCancel" class="secondary">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- ✅ jQuery + Validation -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+
+    <!-- Your app -->
+    <script src="app.js"></script>
+</body>
+</html>
