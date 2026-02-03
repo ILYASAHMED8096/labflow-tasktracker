@@ -44,7 +44,8 @@ app.MapGet("/", () => Results.Redirect("/swagger"));
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
-
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.MapControllers();
 
 // Ensure DB exists
@@ -55,3 +56,4 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+    

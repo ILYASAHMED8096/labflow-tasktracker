@@ -2,6 +2,7 @@
 using LabFlow.Data.Entities;
 using LabFlow.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace LabFlow.Controllers;
@@ -40,8 +41,11 @@ public class TasksController : ControllerBase
     // ---------------- GET: /api/tasks ----------------
 
     [HttpGet]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(PagedResult<TaskResponseDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResult<TaskResponseDto>>> GetAll(
-        [FromQuery] string? status,
+
+            [FromQuery] string? status,
         [FromQuery] string? priority,
         [FromQuery] string? q,
         [FromQuery] string? sortBy = "createdAt",
@@ -59,6 +63,8 @@ public class TasksController : ControllerBase
 
         // Hide deleted tasks
         query = query.Where(t => !t.IsDeleted);
+
+
 
         // Filtering
         if (!string.IsNullOrWhiteSpace(status))
@@ -113,19 +119,21 @@ public class TasksController : ControllerBase
         var totalCount = await query.CountAsync();
 
         var items = await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
+     .Skip((page - 1) * pageSize)
+     .Take(pageSize)
+     .Select(t => ToDto(t))
+     .ToListAsync();
 
         var result = new PagedResult<TaskResponseDto>
         {
             Page = page,
             PageSize = pageSize,
             TotalCount = totalCount,
-            Items = items.Select(ToDto).ToList()
+            Items = items
         };
 
         return Ok(result);
+
     }
 
     // ---------------- GET: /api/tasks/{id} ----------------
@@ -135,9 +143,9 @@ public class TasksController : ControllerBase
     {
         var task = await _db.Tasks.FindAsync(id);
         if (task is null || task.IsDeleted) return NotFound();
-
         return Ok(ToDto(task));
     }
+
 
     // ---------------- POST: /api/tasks ----------------
 
@@ -163,6 +171,7 @@ public class TasksController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = task.Id }, ToDto(task));
     }
 
+
     // ---------------- PUT: /api/tasks/{id} ----------------
 
     [HttpPut("{id:int}")]
@@ -184,6 +193,7 @@ public class TasksController : ControllerBase
         await _db.SaveChangesAsync();
         return Ok(ToDto(task));
     }
+
 
     // ---------------- DELETE: /api/tasks/{id} (Soft Delete) ----------------
 
