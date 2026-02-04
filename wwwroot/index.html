@@ -6,7 +6,6 @@
     <title>LabFlow TaskTracker</title>
     <link rel="stylesheet" href="styles.css" />
 </head>
-
 <body>
     <header class="container">
         <h1>LabFlow TaskTracker</h1>
@@ -78,150 +77,112 @@
 
         <!-- Modal -->
         <div id="modal" class="modal hidden" aria-hidden="true">
-            
-                <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-                    <div class="row space-between">
-                        <h3 id="modalTitle">New Task</h3>
-                        <button id="btnClose" type="button" class="secondary">✕</button>
+            <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+                <div class="row space-between">
+                    <h3 id="modalTitle">New Task</h3>
+                    <!-- X close -->
+                    <button id="btnClose" type="button" class="secondary">✕</button>
+                </div>
+
+                <!-- ✅ Form wrapper so jQuery validate works -->
+                <form id="taskForm" novalidate>
+                    <div class="grid">
+                        <label>
+                            Title
+                            <input id="title" name="title" />
+                        </label>
+
+                        <label>
+                            Description
+                            <textarea id="description" name="description" rows="3"></textarea>
+                        </label>
+
+                        <label>
+                            Priority
+                            <select id="mPriority" name="priority">
+                                <option value="Low">Low</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="High">High</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            Status
+                            <select id="mStatus" name="status">
+                                <option value="Todo" selected>Todo</option>
+                                <option value="InProgress">InProgress</option>
+                                <option value="Done">Done</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            Due Date
+                            <input id="dueDate" name="dueDate" type="date" />
+                        </label>
                     </div>
 
-                    <form id="taskForm" novalidate>
-                        <div class="grid">
-                            <label>
-                                Title
-                                <input id="title" name="title" />
-                            </label>
-
-                            <label>
-                                Description
-                                <textarea id="description" name="description" rows="3"></textarea>
-                            </label>
-
-                            <label>
-                                Priority
-                                <select id="mPriority" name="priority">
-                                    <option value="Low">Low</option>
-                                    <option value="Medium" selected>Medium</option>
-                                    <option value="High">High</option>
-                                </select>
-                            </label>
-
-                            <label>
-                                Status
-                                <select id="mStatus" name="status">
-                                    <option value="Todo" selected>Todo</option>
-                                    <option value="InProgress">InProgress</option>
-                                    <option value="Done">Done</option>
-                                </select>
-                            </label>
-
-                            <label>
-                                Due Date
-                                <input id="dueDate" name="dueDate" type="date" />
-                            </label>
-                        </div>
-
-                        <div class="row">
-                            <button id="btnSave" type="submit">Save</button>
-                            <button id="btnCancel" type="button" class="secondary">Cancel</button>
-                        </div>
-                    </form>
-                </div>
+                    <div class="row">
+                        <!-- ✅ Save submits the form -->
+                        <button id="btnSave" type="submit">Save</button>
+                        <button id="btnCancel" type="button" class="secondary">Cancel</button>
+                    </div>
+                </form>
             </div>
-</main>
+        </div>
+    </main>
 
-    <!-- jQuery -->
+    <!-- ✅ jQuery first -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
-    <!-- jQuery Validate -->
+    <!-- ✅ jQuery Validate after jQuery -->
     <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
 
-    <!-- ✅ Everything in-page -->
+    <!-- ✅ Your app.js last -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+
+    <script src="app.js"></script>
+
+    <script src="app.js"></script>
+
+    <!-- ✅ Safety: modal closing fallback (even if app.js breaks) -->
     <script>
-        $(function () {
-            // ---------------------------
-            // Modal helpers (ONLY via class "hidden")
-            // ---------------------------
-            function openModal(titleText) {
-                $("#modalTitle").text(titleText || "New Task");
-                $("#modal").removeClass("hidden").attr("aria-hidden", "false");
-            }
+        (function () {
+            const modal = document.getElementById("modal");
+            const closeBtn = document.getElementById("btnClose");
+            const cancelBtn = document.getElementById("btnCancel");
 
             function closeModal() {
-                $("#modal").addClass("hidden").attr("aria-hidden", "true");
-
-                // reset fields
-                $("#title").val("");
-                $("#description").val("");
-                $("#mPriority").val("Medium");
-                $("#mStatus").val("Todo");
-                $("#dueDate").val("");
-
-                // reset validation messages
-                if ($("#taskForm").data("validator")) {
-                    $("#taskForm").validate().resetForm();
-                    $(".input-error").removeClass("input-error");
-                }
+                modal.classList.add("hidden");
+                modal.setAttribute("aria-hidden", "true");
             }
 
-            $("#btnNew").on("click", function () {
-                $(".modal-content").removeClass("hidden").css("display", "block");
-            });
+            if (closeBtn) closeBtn.addEventListener("click", closeModal);
+            if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
 
-            $("#btnClose, #btnCancel").on("click", function () {
-                $(this).closest(".modal").hide();
-            });
-           
-
-            // Click outside modal-content closes
-            $("#modal").on("click", function (e) {
-                if (e.target.id === "modal") ;
+            // click outside closes
+            modal.addEventListener("click", (e) => {
+                if (e.target === modal) closeModal();
             });
 
             // ESC closes
-            $(document).on("keydown", function (e) {
-                if (e.key === "Escape" && !$("#modal").hasClass("hidden")) {
-                    $(this).closest(".modal").hide();
-                }
+            document.addEventListener("keydown", (e) => {
+                if (e.key === "Escape" && !modal.classList.contains("hidden")) closeModal();
             });
+        })();
 
-            // ---------------------------
-            // jQuery Validation
-            // ---------------------------
-            $.validator.setDefaults({
-                errorClass: "field-error",
-                highlight: function (element) { $(element).addClass("input-error"); },
-                unhighlight: function (element) { $(element).removeClass("input-error"); }
-            });
+        $("#btnClose").click(function () {
 
-            $("#taskForm").validate({
-                rules: {
-                    title: { required: true, maxlength: 200 },
-                    priority: { required: true },
-                    status: { required: true }
-                },
-                messages: {
-                    title: {
-                        required: "Title is required.",
-                        maxlength: "Title must be 200 characters or less."
-                    }
-                },
-                submitHandler: function () {
-                    // ✅ This is where we will call your API later
-                    alert("Validation passed ✅ (Save will be API call next)");
-                    closeModal();
-                }
-            });
+            $(this).closest(".modal").hide();
+        });
 
-            // ---------------------------
-            // (Optional) prevent Enter key from accidentally submitting other page inputs
-            // ---------------------------
-            $(document).on("keydown", function (e) {
-                if (e.key === "Enter" && $(e.target).closest("#taskForm").length === 0) {
-                    // allow enter only inside form (or remove this if not needed)
-                }
-            });
+        $("#btnNew").click(function () {
+
+            $("#modal").css("display", "");
         });
     </script>
+    </before>
 </body>
 </html>
+
+

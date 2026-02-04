@@ -126,23 +126,18 @@ button {
 .modal {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
+    background: rgba(0,0,0,.6);
+    display: grid;
+    place-items: center;
+    padding: 16px;
 }
 
-    .modal.hidden {
-        display: none;
-    }
-
 .modal-content {
-    background: #0f172a;
-    padding: 20px;
-    border-radius: 12px;
-    width: 480px;
-    max-width: 95%;
+    width: min(700px, 100%);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
 }
 
 .grid {
@@ -160,10 +155,14 @@ button {
         grid-template-columns: 1fr;
     }
 }
+
 .task.overdue {
     border-color: #ef4444;
     box-shadow: 0 0 0 1px rgba(239,68,68,.3);
 }
+
+
+
 .field-error {
     color: #ff8a8a;
     font-size: 12px;
