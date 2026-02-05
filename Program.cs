@@ -48,12 +48,5 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 app.MapControllers();
 
-// Ensure DB exists
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<LabFlowDbContext>();
-    db.Database.EnsureCreated();
-}
-
 app.Run();
     
