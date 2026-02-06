@@ -208,6 +208,9 @@ async function saveTask() {
     } catch (e) {
         showError(e.message || "Save failed");
     }
+    const btnSave = document.getElementById("btnSave");
+    if (btnSave) btnSave.addEventListener("click", btnSave);
+    $(this).closest(".modal").hide();
 }
 
 // -------------------- Delete / Restore --------------------
