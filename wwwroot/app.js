@@ -264,7 +264,6 @@ function setupValidation() {
     });
 }
 
-
 // -------------------- Events --------------------
 document.addEventListener("DOMContentLoaded", () => {
     // Search / paging
